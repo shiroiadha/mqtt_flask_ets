@@ -36,7 +36,7 @@ def on_message(client, userdata, msg):
         print("📩 Data diterima:", data)
 
         # Pastikan payload memiliki format JSON seperti:
-        # { "suhu": 26.5, "humidity": 55.1, "lux": 6.7, "tds": 800 }
+        # { "suhu": 26.5, "humidity": 55.1, "lux": 6.7}
 
         suhu = data.get("suhu")
         humidity = data.get("humidity")
@@ -45,8 +45,8 @@ def on_message(client, userdata, msg):
         db = get_db_connection()
         cursor = db.cursor()
         cursor.execute("""
-            INSERT INTO data_sensor (suhu, humidity, lux, tds)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO data_sensor (suhu, humidity, lux)
+            VALUES (%s, %s, %s)
         """, (suhu, humidity, lux))
         db.commit()
         cursor.close()
@@ -67,16 +67,17 @@ def mqtt_thread():
     client.username_pw_set(USERNAME, PASSWORD)
     client.tls_set(cert_reqs=ssl.CERT_NONE)
     client.tls_insecure_set(True)
-
     client.on_connect = on_connect
     client.on_message = on_message
 
     while True:
         try:
+            print("🔄 Mencoba konek ke HiveMQ Cloud...")
             client.connect(BROKER, PORT)
-            client.loop_forever()
+            client.loop_start()   # gunakan loop_start (non-blocking)
+            break
         except Exception as e:
-            print("⚠️ MQTT terputus, mencoba ulang 5 detik:", e)
+            print("⚠️ Gagal konek, retry 5 detik:", e)
             time.sleep(5)
 
 # Jalankan thread MQTT di background
